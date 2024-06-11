@@ -20,6 +20,7 @@ HUGGINGFACEHUB_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN", "")
 
 set_seed(22)
 import gradio as gr
+import argparse
 
 
 CSS = """
