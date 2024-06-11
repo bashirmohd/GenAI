@@ -113,8 +113,6 @@ video {
 }
 
 """
-"""div {
-  border: none;
 
 
 # config = reader.read_config('docs/config.yaml')
