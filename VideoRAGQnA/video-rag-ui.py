@@ -23,6 +23,10 @@ import gradio as gr
 import argparse
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+VECTORDB_SERVICE_HOST_IP = os.getenv("VECTORDB_SERVICE_HOST_IP", "0.0.0.0")
+
+
 CSS = """
 
 .custom_login-btn {
