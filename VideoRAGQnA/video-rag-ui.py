@@ -115,13 +115,6 @@ video {
 """
 
 
-# config = reader.read_config('docs/config.yaml')
-
-
-model_path = config['model_path']
-video_dir = config['videos']
-print(video_dir)
-video_dir = video_dir.replace('../', '')
 
 
 def load_models():
@@ -136,7 +129,7 @@ def load_models():
 
     return model, tokenizer, streamer
 
-model, tokenizer, streamer = load_models()
+
 
 
 
@@ -184,7 +177,7 @@ class CustomLLM(LLM):
     def _llm_type(self) -> str:
         return "custom"
 
-llm = CustomLLM()
+
 def videoSearch(query):
     results = vs.MultiModalRetrieval(query)
     result = [i.metadata['video'] for i in results]
@@ -302,15 +295,15 @@ if __name__ == '__main__':
     server_port = args.server_port
     server_name = args.server_name
     
-    print ('Config file data \n', yaml.dump(config, default_flow_style=False, sort_keys=False))
 
-    generate_frames = config['generate_frames']
-    embed_frames = config['embed_frames']
-    path = config['videos'] #args.videos_folder #
-    image_output_dir = config['image_output_dir']
-    meta_output_dir = config['meta_output_dir']
-    N = config['number_of_frames_per_second']
-    
+    model_path = config['model_path']
+    video_dir = config['videos']
+    print(video_dir)
+    video_dir = video_dir.replace('../', '')
+
+    model, tokenizer, streamer = load_models()
+    llm = CustomLLM()
+
     host = VECTORDB_SERVICE_HOST_IP
     port = int(config['vector_db']['port'])
     selected_db = config['vector_db']['choice_of_db']
