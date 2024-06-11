@@ -22,7 +22,7 @@ set_seed(22)
 import gradio as gr
 import argparse
 
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 CSS = """
 
 .custom_login-btn {
