@@ -2,7 +2,7 @@ chromadb
 opencv-python-headless
 langchain-experimental
 open-clip-torch
-streamlit
+gradio
 metafunctions
 sentence-transformers
 accelerate
