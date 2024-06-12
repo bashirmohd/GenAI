@@ -287,9 +287,9 @@ if __name__ == '__main__':
 
     parser.add_argument('share_gradio', type=bool, help='whether to create a publicly shareable link for the gradio app. Creates an SSH tunnel to make your UI accessible from anywhere')
 
-    parser.add_argument('server_name', type=str, help='to make app accessible on local network, set this to "0.0.0.0". Can be set by environment variable GRADIO_SERVER_NAME.')
+    parser.add_argument('server_name', type=str, default= None, help='to make app accessible on local network, set this to "0.0.0.0". Can be set by environment variable GRADIO_SERVER_NAME.')
 
-    parser.add_argument('server_port', type=int, help='will start gradio app on this port (if available). Can be set by environment variable GRADIO_SERVER_PORT. ')
+    parser.add_argument('server_port', type=int, default= None, help='will start gradio app on this port (if available). Can be set by environment variable GRADIO_SERVER_PORT. ')
 
     # Parse command-line arguments
     args = parser.parse_args()
