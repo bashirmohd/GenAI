@@ -17,7 +17,7 @@ from utils import config_reader as reader
 from utils import prompt_handler as ph
 # from vector_stores import db
 # HUGGINGFACEHUB_API_TOKEN = os.getenv("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", "")
-HUGGINGFACEHUB_API_TOKEN ="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"
+HUGGINGFACEHUB_API_TOKEN ="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"
 
 set_seed(22)
 import gradio as gr
