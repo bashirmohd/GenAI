@@ -20,4 +20,4 @@ vector_db:
   port: 55555 #8000 #
 
 # LLM path
-model_path: meta-llama/Llama-3-8b-chat-hf
+model_path: meta-llama/Meta-Llama-3-8B
