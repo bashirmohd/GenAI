@@ -201,7 +201,7 @@ def bot(chatbot, input_message, Gallery, selection):
             context = f.read()
     except:
         context = "No video is selected, tell the client to select a video."
-    formatted_prompt = get_formatted_prompt(context, input_message, chatbot[-1])
+    formatted_prompt = ph.get_formatted_prompt(context, input_message, chatbot[-1])
     response = chatbot+[[input_message,""]]
     for new_text in llm.stream_res(formatted_prompt):
         response[-1][1] += new_text
