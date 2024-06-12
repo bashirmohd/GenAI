@@ -246,8 +246,8 @@ def spawnUI(share_gradio, server_port, server_name):
             with gr.Row(visible = True, elem_classes= ["chatbot-widget"]) as chatUI:
                 with gr.Column(scale = 10):
                     chatbot = gr.Chatbot(layout="panel", bubble_full_width=True,
-                                        avatar_images=["/content/images.jpeg",
-                                                    "/content/images.png"],
+                                        avatar_images=["images.jpeg",
+                                                    "images.png"],
                                         show_label=False,
                                         container = False,
                                         height = 600,
