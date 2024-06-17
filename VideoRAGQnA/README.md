@@ -89,3 +89,8 @@ python3 embedding/generate_store_embeddings.py docs/config.yaml video_ingest/vid
 ```bash
 streamlit run video-rag-ui.py --server.address 0.0.0.0 --server.port 50055
 ```
+
+**Gradio Web UI Video RAG**
+```bash
+python3 video-rag-ui.py docs/config.yaml True '0.0.0.0' 50055
+```
