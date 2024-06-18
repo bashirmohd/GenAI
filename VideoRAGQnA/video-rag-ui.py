@@ -1,14 +1,11 @@
 import os
-
 from embedding.vector_stores import db
 import time
 import torch
-
 import torch
 import gradio as gr
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
 from transformers import set_seed
-
 from typing import Any, List, Mapping, Optional
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
@@ -194,6 +191,21 @@ def videoSearch(query):
     return result, [[None,"Hello"]]
 
 
+# def bot(chatbot, input_message, Gallery, selection):
+#     print(selection,"====")
+#     try:
+#         context = "video_ingest/scene_description/"+Gallery[selection][1]+".txt"
+#         with open(context) as f:
+#             context = f.read()
+#     except:
+#         context = "No video is selected, tell the client to select a video."
+#     formatted_prompt = ph.get_formatted_prompt(context, input_message, chatbot[-1])
+#     response = chatbot+[[input_message,""]]
+#     for new_text in llm.stream_res(formatted_prompt):
+#         response[-1][1] += new_text
+
+#         yield response, ""
+
 def bot(chatbot, input_message, Gallery, selection):
     print(selection,"====")
     try:
@@ -202,10 +214,10 @@ def bot(chatbot, input_message, Gallery, selection):
             context = f.read()
     except:
         context = "No video is selected, tell the client to select a video."
-    formatted_prompt = ph.get_formatted_prompt(context, input_message, chatbot[-1])
+    formatted_prompt = get_formatted_prompt(context, input_message, chatbot[-1])
     response = chatbot+[[input_message,""]]
     for new_text in llm.stream_res(formatted_prompt):
-        response[-1][1] += new_text
+        response[-1][1] += new_text.replace("<|eot_id|>","")
 
         yield response, ""
         
