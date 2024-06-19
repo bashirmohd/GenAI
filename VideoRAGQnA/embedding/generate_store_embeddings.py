@@ -1,26 +1,16 @@
-# import sys
-# import os
-
-# sys.path.append('/path/to/parent')  # Replace with the actual path to the parent folder
-
-# from VideoRAGQnA.utils import config_reader as reader
 import sys
 import os
-
-# Add the parent directory of the current script to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-VECTORDB_SERVICE_HOST_IP = os.getenv("VECTORDB_SERVICE_HOST_IP", "0.0.0.0")
-
-
-# sys.path.append(os.path.abspath('../utils'))
-# import config_reader as reader
 import yaml
 import chromadb
 import json
-import os
 import argparse
 import torch
 from langchain_experimental.open_clip import OpenCLIPEmbeddings
+
+# Ensure the script's directory is in sys.path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(script_dir, '..'))
+
 from embedding.adaclip_modeling.model import AdaCLIP
 from embedding.adaclip_modeling.clip_model import CLIP
 from utils import config_reader as reader
@@ -31,9 +21,9 @@ import numpy as np
 from PIL import Image
 from embedding.adaclip_datasets.preprocess import get_transforms
 
+VECTORDB_SERVICE_HOST_IP = os.getenv("VECTORDB_SERVICE_HOST_IP", "0.0.0.0")
 
 def setup_adaclip_model(cfg, device):
-
     pretrained_state_dict = CLIP.get_config(pretrained_clip_name=cfg.clip_backbone)
     state_dict = {}
     epoch = 0
@@ -221,29 +211,26 @@ def retrieval_testing(vs):
     print(results)
 
 def main():
-    # read config yaml
-    print ('Reading config file')
-    # config = reader.read_config('../docs/config.yaml')
-
     # Create argument parser
-    parser = argparse.ArgumentParser(description='Process configuration file for generating and storing embeddings.')
+    parser = argparse.ArgumentParser(description='Process configuration file and video directory for generating and storing embeddings.')
     parser.add_argument('config_file', type=str, help='Path to configuration file (e.g., config.yaml)')
+    parser.add_argument('videos_folder', type=str, help='Path to the folder containing videos')
 
     # Parse command-line arguments
     args = parser.parse_args()
-    # Read configuration file
+
+    # Update the config path with the provided videos folder
     config = reader.read_config(args.config_file)
+    config['videos'] = args.videos_folder
+
     # Read AdaCLIP
     adaclip_cfg_json = json.load(open(config['adaclip_cfg_path'], 'r'))
     adaclip_cfg_json["resume"] = config['adaclip_model_path']
     adaclip_cfg = argparse.Namespace(**adaclip_cfg_json)
 
-
     print ('Config file data \n', yaml.dump(config, default_flow_style=False, sort_keys=False))
 
     generate_frames = config['generate_frames']
-    #embed_frames = config['embed_frames']
-    path = config['videos'] #args.videos_folder #
     image_output_dir = config['image_output_dir']
     meta_output_dir = config['meta_output_dir']
     N = config['number_of_frames_per_second']
@@ -267,7 +254,7 @@ def main():
         model, _ = setup_adaclip_model(adaclip_cfg, device="cuda")
         vs = db.VideoVS(host, port, selected_db, model)
     else:
-        print(f"ERROR: Selected embedding type in config.yaml {config['embeddings']['type']} is not in [\'video\', \'frame\']")
+        print(f"ERROR: Selected embedding type in config.yaml {config['embeddings']['type']} is not in ['video', 'frame']")
         return
     generate_embeddings(config, model, vs)
     retrieval_testing(vs)
