@@ -66,9 +66,9 @@ HFembeddings = HuggingFaceEmbeddings()
 
 
 
-db = FAISS.from_texts(instructions, HFembeddings)
+FAISS_db = FAISS.from_texts(instructions, HFembeddings)
 
-def get_context(query, db=db):
+def get_context(query, db=FAISS_db):
     context = db.similarity_search(query)
     return [i.page_content for i in context]
 
