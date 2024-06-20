@@ -73,38 +73,6 @@ def get_context(query, db=FAISS_db):
     return [i.page_content for i in context]
 
 
-instructions = [
-    """Identify the person [with specific features / seen at a specific location
-    / performing a specific action] in the provided data. Provide details such as their name,
-    role, and any other relevant information.""",
-    
-    """Analyze the provided data to recognize and describe the activities performed by individuals.
-    Specify the type of activity and any relevant contextual details.""",
-    
-    """Determine the interactions between individuals and items in the provided data.
-    Describe the nature of the interaction and the items involved.""",
-    
-    """Analyze the provided data to answer queries based on specific time intervals.
-    Provide detailed information corresponding to the specified time frames.""",
-    
-    """Identify individuals based on their appearance as described in the provided data.
-     Provide details about their identity and actions.""",
-    
-    """Answer questions related to events and activities that occurred on a specific day.
-    Provide a detailed account of the events."""
-]
-
-# Embeddings
-HFembeddings = HuggingFaceEmbeddings()
-
-
-
-db = FAISS.from_texts(instructions, HFembeddings)
-
-def get_context(query, db=db):
-    context = db.similarity_search(query)
-    return [i.page_content for i in context]
-
 if 'config' not in st.session_state.keys():
     st.session_state.config = reader.read_config('docs/config.yaml')
 
