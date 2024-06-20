@@ -6,11 +6,14 @@ import torch
 
 import torch
 import streamlit as st
-from transformers import AutoTokenizer, LlamaTokenizer, AutoModelForCausalLM, TextIteratorStreamer
+#from transformers import AutoTokenizer
+from transformers import LlamaTokenizer, AutoModelForCausalLM, TextIteratorStreamer
 from transformers import set_seed
 import argparse
 
 from typing import Any, List, Mapping, Optional
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 import threading
@@ -35,6 +38,38 @@ from embedding.video_llama.runners import *
 from embedding.video_llama.tasks import *
 
 set_seed(22)
+instructions = [
+    """Identify the person [with specific features / seen at a specific location
+    / performing a specific action] in the provided data. Provide details such as their name,
+    role, and any other relevant information.""",
+    
+    """Analyze the provided data to recognize and describe the activities performed by individuals.
+    Specify the type of activity and any relevant contextual details.""",
+    
+    """Determine the interactions between individuals and items in the provided data.
+    Describe the nature of the interaction and the items involved.""",
+    
+    """Analyze the provided data to answer queries based on specific time intervals.
+    Provide detailed information corresponding to the specified time frames.""",
+    
+    """Identify individuals based on their appearance as described in the provided data.
+     Provide details about their identity and actions.""",
+    
+    """Answer questions related to events and activities that occurred on a specific day.
+    Provide a detailed account of the events."""
+]
+
+# Embeddings
+HFembeddings = HuggingFaceEmbeddings()
+
+
+
+db = FAISS.from_texts(instructions, HFembeddings)
+
+def get_context(query, db=db):
+    context = db.similarity_search(query)
+    return [i.page_content for i in context]
+
 
 if 'config' not in st.session_state.keys():
     st.session_state.config = reader.read_config('docs/config.yaml')
@@ -47,10 +82,6 @@ video_dir = config['videos']
 if not os.path.exists(os.path.join(config['meta_output_dir'], "metadata.json")):
     from embedding.generate_store_embeddings import main
     vs = main()
-#import json
-#adaclip_cfg_json = json.load(open(config['adaclip_cfg_path'], 'r'))
-#adaclip_cfg_json["resume"] = config['adaclip_model_path']
-#adaclip_cfg = argparse.Namespace(**adaclip_cfg_json)
 st.set_page_config(initial_sidebar_state='collapsed', layout='wide')
 
 st.title("Video RAG")
@@ -91,7 +122,7 @@ video_llama, tokenizer, streamer = load_models()
 vis_processor_cfg = video_llama.cfg.datasets_cfg.webvid.vis_processor.train
 vis_processor = registry.get_processor_class(vis_processor_cfg.name).from_config(vis_processor_cfg)
 
-chat = Chat(video_llama.model, vis_processor, device='cuda:{}'.format(config['vl_branch']['gpu_id']))
+chat = Chat(video_llama.model, vis_processor, device='cpu')
 
 def chat_reset(chat_state, img_list):
     if chat_state is not None:
@@ -245,12 +276,18 @@ if 'vs' not in st.session_state.keys():
         host = st.session_state.config['vector_db']['host']
         port = int(st.session_state.config['vector_db']['port'])
         selected_db = st.session_state.config['vector_db']['choice_of_db']
-        st.session_state['vs'] = vs
-        #if config['embeddings']['type'] == "frame":
-        #    #st.session_state['vs'] = db.VS(host, port, selected_db)
-        #elif config['embeddings']['type'] == "video":
-        #    #model, _ = setup_adaclip_model(adaclip_cfg, device="cuda")
-        #    #st.session_state['vs'] = db.VideoVS(host, port, selected_db, model) # FIX THIS LINE
+        try:
+            st.session_state['vs'] = vs
+        except:
+            if config['embeddings']['type'] == "frame":
+                st.session_state['vs'] = db.VS(host, port, selected_db)
+            elif config['embeddings']['type'] == "video":
+                import json
+                adaclip_cfg_json = json.load(open(config['adaclip_cfg_path'], 'r'))
+                adaclip_cfg_json["resume"] = config['adaclip_model_path']
+                adaclip_cfg = argparse.Namespace(**adaclip_cfg_json)
+                model, _ = setup_adaclip_model(adaclip_cfg, device="cpu")
+                st.session_state['vs'] = db.VideoVS(host, port, selected_db, model) # FIX THIS LINE
 
         if st.session_state.vs.client == None:
             print ('Error while connecting to vector DBs')
@@ -329,14 +366,14 @@ def handle_message():
                 scene_des = get_description(video_name)
                 formatted_prompt = ph.get_formatted_prompt(scene=scene_des, prompt=prompt)
                 """
-                
                 full_response = ''
                 full_response = f"Most relevant retrived video is **{video_name}** \n\n"
-                
+                instruction = f"{get_context(prompt)[0]}: prompt"
                 #for new_text in st.session_state.llm.stream_res(formatted_prompt):
-                for new_text in st.session_state.llm.stream_res(video_name, prompt, chat, playback_offset, config['clip_duration']):
+                for new_text in st.session_state.llm.stream_res(video_name, instruction, chat, playback_offset, config['clip_duration']):
                     full_response += new_text
                     placeholder.markdown(full_response)
+                
 
                 end = time.time()
                 full_response += f'\n\n🚀 Generated in {(end - start):.4f} seconds.'
