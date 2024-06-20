@@ -366,7 +366,7 @@ def handle_message():
                 
                 full_response = ''
                 full_response = f"Most relevant retrived video is **{video_name}** \n\n"
-                instruction = f"{instruction = get_context(prompt)[0]}: prompt"
+                instruction = f"{get_context(prompt)[0]}: prompt"
                 #for new_text in st.session_state.llm.stream_res(formatted_prompt):
                 for new_text in st.session_state.llm.stream_res(video_name, instruction, chat, playback_offset, config['clip_duration']):
                     full_response += new_text
