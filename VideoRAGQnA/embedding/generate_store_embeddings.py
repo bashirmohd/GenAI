@@ -197,7 +197,7 @@ def store_into_vectordb(vs, metadata_file_path, embedding_model, config):
             vs.video_db.add_videos(
                 paths=video_name_list,
                 metadatas=metadata_list,
-                start_time=[data['timestamp']],
+                #start_time=[data['timestamp']],
                 clip_duration=[data['clip_duration']]
             )
         print (f'✅ {_+1}/{total_videos} video {video}, len {len(video_name_list)}, {len(metadata_list)}, {len(embedding_list)}')
