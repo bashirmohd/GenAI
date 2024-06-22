@@ -1,4 +1,4 @@
- import os
+import os
 
 from embedding.vector_stores import db
 import time
