@@ -1,4 +1,4 @@
-import os
+ import os
 
 from embedding.vector_stores import db
 import time
@@ -339,6 +339,7 @@ if 'qcnt' not in st.session_state.keys():
     st.session_state['qcnt'] = 0
 
 def handle_message():
+    print("messages"*8, st.session_state.messages) 
     # Generate a new response if last message is not from assistant
     if st.session_state.messages[-1]["role"] != "assistant":
         # Handle user messages here
@@ -423,7 +424,7 @@ else:
     prompt = st.session_state.example_video
     st.session_state['prompt'] = prompt
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
-    st.chat_input(disabled=True)
+    st.chat_input(disabled=False)
     if prompt == 'Find similar videos':
         st.session_state.messages.append({"role": "user", "content": prompt+': '+st.session_state['prevprompt']})
     else:
