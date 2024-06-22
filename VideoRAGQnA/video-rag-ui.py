@@ -15,8 +15,6 @@ from typing import Any, List, Mapping, Optional
 from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
-from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.llms.base import LLM
 import threading
 from utils import config_reader as reader
@@ -40,6 +38,7 @@ from embedding.video_llama.runners import *
 from embedding.video_llama.tasks import *
 
 set_seed(22)
+
 instructions = [
     """Identify the person [with specific features / seen at a specific location
     / performing a specific action] in the provided data. Provide details such as their name,
@@ -66,12 +65,11 @@ HFembeddings = HuggingFaceEmbeddings()
 
 
 
-FAISS_db = FAISS.from_texts(instructions, HFembeddings)
+hf_db = FAISS.from_texts(instructions, HFembeddings)
 
-def get_context(query, db=FAISS_db):
-    context = db.similarity_search(query)
+def get_context(query, hf_db=hf_db):
+    context = hf_db.similarity_search(query)
     return [i.page_content for i in context]
-
 
 if 'config' not in st.session_state.keys():
     st.session_state.config = reader.read_config('docs/config.yaml')
@@ -366,16 +364,16 @@ def handle_message():
                     play_video(video_name, playback_offset)
                 """
                 scene_des = get_description(video_name)
-                formatted_prompt = ph.get_formatted_prompt(scene=scene_des, prompt=prompt, instruction = get_context(prompt)[0])
+                formatted_prompt = ph.get_formatted_prompt(scene=scene_des, prompt=prompt)
                 """
+                
                 full_response = ''
                 full_response = f"Most relevant retrived video is **{video_name}** \n\n"
-                instruction = f"{get_context(prompt)[0]}: prompt"
+                instruction = f"{get_context(prompt)[0]}: {prompt}"
                 #for new_text in st.session_state.llm.stream_res(formatted_prompt):
                 for new_text in st.session_state.llm.stream_res(video_name, instruction, chat, playback_offset, config['clip_duration']):
                     full_response += new_text
                     placeholder.markdown(full_response)
-                
 
                 end = time.time()
                 full_response += f'\n\n🚀 Generated in {(end - start):.4f} seconds.'
