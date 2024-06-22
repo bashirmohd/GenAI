@@ -374,7 +374,7 @@ def handle_message():
                 for new_text in st.session_state.llm.stream_res(video_name, instruction, chat, playback_offset, config['clip_duration']):
                     full_response += new_text
                     placeholder.markdown(full_response)
-
+                print(full_response)
                 end = time.time()
                 full_response += f'\n\n🚀 Generated in {(end - start):.4f} seconds.'
                 #chat_state, img_list = chat_reset(chat_state, img_list)
