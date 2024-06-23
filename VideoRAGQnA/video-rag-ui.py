@@ -130,9 +130,10 @@ class VideoLLM(LLM):
         chat.upload_video_without_audio(video_path, start_time, duration)
         chat.ask(text_input)#, chat_state)
         #answer = chat.answer(chat_state, img_list, max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True, streamer=streamer)
-        self.answer = chat.answer(max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True)#, streamer=streamer)
+        answer = chat.answer(max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True)#, streamer=streamer)
         print("-"*30)
         print("vlm call successful")
+        return answer
     def stream_res(self, video_path, text_input, chat, start_time, duration):
         print("-"*30)
         print("starting model stream")
@@ -140,7 +141,7 @@ class VideoLLM(LLM):
         # thread = threading.Thread(target=self._call, args=(video_path, "<rag_prompt>"+text_input, chat, start_time, duration, streamer))  # Pass streamer to _call
         # thread.start()
         
-        for text in self.answer:
+        for text in self._call(video_path, "<rag_prompt>"+text_input, chat, start_time, duration):
             yield text
         print("-"*30)
         print("streaming model done")
