@@ -43,7 +43,8 @@ instructions = [
     """Identify the person [with specific features / seen at a specific location
     / performing a specific action] in the provided data. Provide details such as their
     role, and any other relevant information, 
-    Do not give repetitions, always give distinct and accurate information only.""",
+    Do not give repetitions, always give distinct and accurate information only.
+    """,
     
     """Analyze the provided data to recognize and describe the activities performed by individuals.
     Specify the type of activity and any relevant contextual details, 
@@ -168,7 +169,7 @@ class VideoLLM(LLM):
         chat.upload_video_without_audio(video_path, start_time, duration)
         chat.ask(text_input)#, chat_state)
         #answer = chat.answer(chat_state, img_list, max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True, streamer=streamer)
-        answer = chat.answer(max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True, streamer=streamer)
+        answer = chat.answer(max_new_tokens=100, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.01, max_length=500, keep_conv_hist=True, streamer=streamer)
 
     def stream_res(self, video_path, text_input, chat, start_time, duration):
         #thread = threading.Thread(target=self._call, args=(video_path, text_input, chat, chat_state, img_list, streamer))  # Pass streamer to _call
