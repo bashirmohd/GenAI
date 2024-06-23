@@ -41,7 +41,7 @@ if 'config' not in st.session_state.keys():
     st.session_state.config = reader.read_config('docs/config.yaml')
 
 config = st.session_state.config
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = "cpu" #torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model_path = config['model_path']
 video_dir = config['videos']
 # Read AdaCLIP
