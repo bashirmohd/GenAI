@@ -41,7 +41,7 @@ if 'config' not in st.session_state.keys():
     st.session_state.config = reader.read_config('docs/config.yaml')
 
 config = st.session_state.config
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model_path = config['model_path']
 video_dir = config['videos']
 # Read AdaCLIP
@@ -70,7 +70,7 @@ st.markdown(title_alignment, unsafe_allow_html=True)
 def load_models():
     #print("HF Token: ", HUGGINGFACEHUB_API_TOKEN)
     #model = AutoModelForCausalLM.from_pretrained(
-    #    model_path, torch_dtype=torch.float32, device_map='auto', trust_remote_code=True, token=HUGGINGFACEHUB_API_TOKEN
+    #    model_path, torch_dtype=torch.float32, device_map=device, trust_remote_code=True, token=HUGGINGFACEHUB_API_TOKEN
     #)
 
     #tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, token=HUGGINGFACEHUB_API_TOKEN)
@@ -88,7 +88,7 @@ video_llama, tokenizer, streamer = load_models()
 vis_processor_cfg = video_llama.cfg.datasets_cfg.webvid.vis_processor.train
 vis_processor = registry.get_processor_class(vis_processor_cfg.name).from_config(vis_processor_cfg)
 
-chat = Chat(video_llama.model, vis_processor, device='cpu')
+chat = Chat(video_llama.model, vis_processor, device=device)
 
 def chat_reset(chat_state, img_list):
     if chat_state is not None:
@@ -252,7 +252,7 @@ if 'vs' not in st.session_state.keys():
                 adaclip_cfg_json = json.load(open(config['adaclip_cfg_path'], 'r'))
                 adaclip_cfg_json["resume"] = config['adaclip_model_path']
                 adaclip_cfg = argparse.Namespace(**adaclip_cfg_json)
-                model, _ = setup_adaclip_model(adaclip_cfg, device="cpu")
+                model, _ = setup_adaclip_model(adaclip_cfg, device=device)
                 st.session_state['vs'] = db.VideoVS(host, port, selected_db, model) # FIX THIS LINE
 
         if st.session_state.vs.client == None:
