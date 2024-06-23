@@ -124,6 +124,7 @@ class AdaCLIPEmbeddings(BaseModel, Embeddings):
 
     def load_video_for_adaclip(self, vis_path, num_frm=64, no_policy=False, policy_backbone='mobilenet_v3_large', max_img_size=224, **kwargs):
         # Load video with VideoReader
+        print("loading for adaclip: ", vis_path)
         vr = VideoReader(vis_path, ctx=cpu(0))
         fps = vr.get_avg_fps()
         num_frames = len(vr)
