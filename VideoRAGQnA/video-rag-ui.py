@@ -12,8 +12,6 @@ from transformers import set_seed
 import argparse
 
 from typing import Any, List, Mapping, Optional
-from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 import threading
@@ -39,38 +37,6 @@ from embedding.video_llama.tasks import *
 
 set_seed(22)
 
-instructions = [
-    """Identify the person [with specific features / seen at a specific location
-    / performing a specific action] in the provided data. Provide details such as their name,
-    role, and any other relevant information.""",
-    
-    """Analyze the provided data to recognize and describe the activities performed by individuals.
-    Specify the type of activity and any relevant contextual details.""",
-    
-    """Determine the interactions between individuals and items in the provided data.
-    Describe the nature of the interaction and the items involved.""",
-    
-    """Analyze the provided data to answer queries based on specific time intervals.
-    Provide detailed information corresponding to the specified time frames.""",
-    
-    """Identify individuals based on their appearance as described in the provided data.
-     Provide details about their identity and actions.""",
-    
-    """Answer questions related to events and activities that occurred on a specific day.
-    Provide a detailed account of the events."""
-]
-
-# Embeddings
-HFembeddings = HuggingFaceEmbeddings()
-
-
-
-hf_db = FAISS.from_texts(instructions, HFembeddings)
-
-def get_context(query, hf_db=hf_db):
-    context = hf_db.similarity_search(query)
-    return [i.page_content for i in context]
-
 if 'config' not in st.session_state.keys():
     st.session_state.config = reader.read_config('docs/config.yaml')
 
@@ -79,9 +45,9 @@ config = st.session_state.config
 model_path = config['model_path']
 video_dir = config['videos']
 # Read AdaCLIP
-# if not os.path.exists(os.path.join(config['meta_output_dir'], "metadata.json")):
-from embedding.generate_store_embeddings import main
-vs = main()
+if not os.path.exists(os.path.join(config['meta_output_dir'], "metadata.json")):
+    from embedding.generate_store_embeddings import main
+    vs = main()
 st.set_page_config(initial_sidebar_state='collapsed', layout='wide')
 
 st.title("Video RAG")
@@ -339,7 +305,6 @@ if 'qcnt' not in st.session_state.keys():
     st.session_state['qcnt'] = 0
 
 def handle_message():
-    print("messages"*8, st.session_state.messages) 
     # Generate a new response if last message is not from assistant
     if st.session_state.messages[-1]["role"] != "assistant":
         # Handle user messages here
@@ -370,12 +335,12 @@ def handle_message():
                 
                 full_response = ''
                 full_response = f"Most relevant retrived video is **{video_name}** \n\n"
-                instruction = f"{get_context(prompt)[0]}: {prompt}"
+                
                 #for new_text in st.session_state.llm.stream_res(formatted_prompt):
-                for new_text in st.session_state.llm.stream_res(video_name, instruction, chat, playback_offset, config['clip_duration']):
+                for new_text in st.session_state.llm.stream_res(video_name, prompt, chat, playback_offset, config['clip_duration']):
                     full_response += new_text
                     placeholder.markdown(full_response)
-                print(full_response)
+
                 end = time.time()
                 full_response += f'\n\n🚀 Generated in {(end - start):.4f} seconds.'
                 #chat_state, img_list = chat_reset(chat_state, img_list)
@@ -424,7 +389,7 @@ else:
     prompt = st.session_state.example_video
     st.session_state['prompt'] = prompt
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
-    st.chat_input(disabled=False)
+    st.chat_input(disabled=True)
     if prompt == 'Find similar videos':
         st.session_state.messages.append({"role": "user", "content": prompt+': '+st.session_state['prevprompt']})
     else:
