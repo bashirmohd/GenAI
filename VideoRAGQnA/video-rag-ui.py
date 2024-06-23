@@ -79,9 +79,9 @@ config = st.session_state.config
 model_path = config['model_path']
 video_dir = config['videos']
 # Read AdaCLIP
-if not os.path.exists(os.path.join(config['meta_output_dir'], "metadata.json")):
-    from embedding.generate_store_embeddings import main
-    vs = main()
+# if not os.path.exists(os.path.join(config['meta_output_dir'], "metadata.json")):
+from embedding.generate_store_embeddings import main
+vs = main()
 st.set_page_config(initial_sidebar_state='collapsed', layout='wide')
 
 st.title("Video RAG")
