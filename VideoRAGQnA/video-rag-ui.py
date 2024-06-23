@@ -41,23 +41,29 @@ set_seed(22)
 
 instructions = [
     """Identify the person [with specific features / seen at a specific location
-    / performing a specific action] in the provided data. Provide details such as their name,
-    role, and any other relevant information.""",
+    / performing a specific action] in the provided data. Provide details such as their
+    role, and any other relevant information, 
+    Do not give repetitions, always give distinct and accurate information only.""",
     
     """Analyze the provided data to recognize and describe the activities performed by individuals.
-    Specify the type of activity and any relevant contextual details.""",
+    Specify the type of activity and any relevant contextual details, 
+    Do not give repetitions, always give distinct and accurate information only.""",
     
     """Determine the interactions between individuals and items in the provided data.
-    Describe the nature of the interaction and the items involved.""",
+    Describe the nature of the interaction and the items involved, 
+    Do not give repetitions, always give distinct and accurate information only.""",
     
     """Analyze the provided data to answer queries based on specific time intervals.
-    Provide detailed information corresponding to the specified time frames.""",
+    Provide detailed information corresponding to the specified time frames,
+    Do not give repetitions, always give distinct and accurate information only.""",
     
     """Identify individuals based on their appearance as described in the provided data.
-     Provide details about their identity and actions.""",
+     Provide details about their identity and actions,
+     Do not give repetitions, always give distinct and accurate information only.""",
     
     """Answer questions related to events and activities that occurred on a specific day.
-    Provide a detailed account of the events."""
+    Provide a detailed account of the events,
+    Do not give repetitions, always give distinct and accurate information only."""
 ]
 
 # Embeddings
