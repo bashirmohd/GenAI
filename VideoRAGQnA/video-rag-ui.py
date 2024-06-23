@@ -68,6 +68,7 @@ st.markdown(title_alignment, unsafe_allow_html=True)
 
 @st.cache_resource       
 def load_models():
+    print("loading in model")
     #print("HF Token: ", HUGGINGFACEHUB_API_TOKEN)
     #model = AutoModelForCausalLM.from_pretrained(
     #    model_path, torch_dtype=torch.float32, device_map=device, trust_remote_code=True, token=HUGGINGFACEHUB_API_TOKEN
@@ -87,10 +88,13 @@ def load_models():
 video_llama, tokenizer, streamer = load_models()
 vis_processor_cfg = video_llama.cfg.datasets_cfg.webvid.vis_processor.train
 vis_processor = registry.get_processor_class(vis_processor_cfg.name).from_config(vis_processor_cfg)
-
+print("-"*30)
+print("initializing model")
 chat = Chat(video_llama.model, vis_processor, device=device)
 
 def chat_reset(chat_state, img_list):
+    print("-"*30)
+    print("resetting chatState")
     if chat_state is not None:
         chat_state.messages = []
     if img_list is not None:
@@ -118,22 +122,28 @@ class VideoLLM(LLM):
         ):
         
         print(" - - ")
-        print("  text_input:", text_input)
+        print("-"*30)
+        # print("initializing model")
+        print("calling vlm model")
         print(" - - ")
         
         chat.upload_video_without_audio(video_path, start_time, duration)
         chat.ask(text_input)#, chat_state)
         #answer = chat.answer(chat_state, img_list, max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True, streamer=streamer)
         answer = chat.answer(max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True, streamer=streamer)
-
+        print("-"*30)
+        print("vlm call successful")
     def stream_res(self, video_path, text_input, chat, start_time, duration):
+        print("-"*30)
+        print("starting model stream")
         #thread = threading.Thread(target=self._call, args=(video_path, text_input, chat, chat_state, img_list, streamer))  # Pass streamer to _call
         thread = threading.Thread(target=self._call, args=(video_path, "<rag_prompt>"+text_input, chat, start_time, duration, streamer))  # Pass streamer to _call
         thread.start()
         
         for text in streamer:
             yield text
-
+        print("-"*30)
+        print("streaming model done")
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
         return model_path # {"name_of_model": model_path}
@@ -192,6 +202,8 @@ class CustomLLM(LLM):
         return "custom"
     
 def get_top_doc(results, qcnt):
+    print("-"*30)
+    print("retrieving videos model")
     hit_score = {}
     for r in results:
         try:
@@ -212,6 +224,8 @@ def get_top_doc(results, qcnt):
     if qcnt >= len(x):
         return None, None
     print (f'top docs = {x}')
+    print("-"*30)
+    print("video retrieval done")
     return {'video': list(x)[qcnt]}, playback_offset
 
 def play_video(x, offset):
@@ -305,6 +319,8 @@ if 'qcnt' not in st.session_state.keys():
     st.session_state['qcnt'] = 0
 
 def handle_message():
+    print("-"*30)
+    print("starting message handling")
     # Generate a new response if last message is not from assistant
     if st.session_state.messages[-1]["role"] != "assistant":
         # Handle user messages here
@@ -347,6 +363,8 @@ def handle_message():
                 #chat.clear()
                 placeholder.markdown(full_response)
         message = {"role": "assistant", "content": full_response}
+        print("-"*30)
+        print("message handling done")
         st.session_state.messages.append(message)
       
 def display_messages():
