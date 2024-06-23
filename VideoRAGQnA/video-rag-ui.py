@@ -12,6 +12,8 @@ from transformers import set_seed
 import argparse
 
 from typing import Any, List, Mapping, Optional
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 import threading
@@ -36,6 +38,38 @@ from embedding.video_llama.runners import *
 from embedding.video_llama.tasks import *
 
 set_seed(22)
+
+instructions = [
+    """Identify the person [with specific features / seen at a specific location
+    / performing a specific action] in the provided data. Provide details such as their name,
+    role, and any other relevant information.""",
+    
+    """Analyze the provided data to recognize and describe the activities performed by individuals.
+    Specify the type of activity and any relevant contextual details.""",
+    
+    """Determine the interactions between individuals and items in the provided data.
+    Describe the nature of the interaction and the items involved.""",
+    
+    """Analyze the provided data to answer queries based on specific time intervals.
+    Provide detailed information corresponding to the specified time frames.""",
+    
+    """Identify individuals based on their appearance as described in the provided data.
+     Provide details about their identity and actions.""",
+    
+    """Answer questions related to events and activities that occurred on a specific day.
+    Provide a detailed account of the events."""
+]
+
+# Embeddings
+HFembeddings = HuggingFaceEmbeddings()
+
+
+
+hf_db = FAISS.from_texts(instructions, HFembeddings)
+
+def get_context(query, hf_db=hf_db):
+    context = hf_db.similarity_search(query)
+    return [i.page_content for i in context]
 
 if 'config' not in st.session_state.keys():
     st.session_state.config = reader.read_config('docs/config.yaml')
@@ -122,29 +156,22 @@ class VideoLLM(LLM):
         ):
         
         print(" - - ")
-        print("-"*30)
-        # print("initializing model")
-        print("calling vlm model")
+        print("  text_input:", text_input)
         print(" - - ")
         
         chat.upload_video_without_audio(video_path, start_time, duration)
         chat.ask(text_input)#, chat_state)
         #answer = chat.answer(chat_state, img_list, max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True, streamer=streamer)
-        answer = chat.answer(max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True)#, streamer=streamer)
-        print("-"*30)
-        print("vlm call successful")
-        return answer
+        answer = chat.answer(max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True, streamer=streamer)
+
     def stream_res(self, video_path, text_input, chat, start_time, duration):
-        print("-"*30)
-        print("starting model stream")
-        # #thread = threading.Thread(target=self._call, args=(video_path, text_input, chat, chat_state, img_list, streamer))  # Pass streamer to _call
-        # thread = threading.Thread(target=self._call, args=(video_path, "<rag_prompt>"+text_input, chat, start_time, duration, streamer))  # Pass streamer to _call
-        # thread.start()
+        #thread = threading.Thread(target=self._call, args=(video_path, text_input, chat, chat_state, img_list, streamer))  # Pass streamer to _call
+        thread = threading.Thread(target=self._call, args=(video_path, "<rag_prompt>"+text_input, chat, start_time, duration, streamer))  # Pass streamer to _call
+        thread.start()
         
-        for text in self._call(video_path, "<rag_prompt>"+text_input, chat, start_time, duration):
+        for text in streamer:
             yield text
-        print("-"*30)
-        print("streaming model done")
+
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
         return model_path # {"name_of_model": model_path}
@@ -352,9 +379,9 @@ def handle_message():
                 
                 full_response = ''
                 full_response = f"Most relevant retrived video is **{video_name}** \n\n"
-                
+                instruction = f"{get_context(prompt)[0]}: {prompt}"
                 #for new_text in st.session_state.llm.stream_res(formatted_prompt):
-                for new_text in st.session_state.llm.stream_res(video_name, prompt, chat, playback_offset, config['clip_duration']):
+                for new_text in st.session_state.llm.stream_res(video_name, instruction, chat, playback_offset, config['clip_duration']):
                     full_response += new_text
                     placeholder.markdown(full_response)
 
