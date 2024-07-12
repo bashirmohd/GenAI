@@ -200,7 +200,7 @@ class VideoVS:
             # print("dates_found:",dates_found)
             for date_tuple in dates_found:
                 date_string, parsed_date = date_tuple
-                print(f"Found date: {date_string} -> Parsed as: {parsed_date}")
+                #print(f"Found date: {date_string} -> Parsed as: {parsed_date}")
                 date_out = str(parsed_date.date())
                 time_out = str(parsed_date.time())
                 hours, minutes, seconds = map(float, time_out.split(":"))
