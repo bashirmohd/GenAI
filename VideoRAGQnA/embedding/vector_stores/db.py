@@ -189,7 +189,7 @@ class VideoVS:
 
 
     def update_db(self, prompt, n_images):
-        print ('Update DB')
+        #print ('Update DB')
 
         base_date = datetime.datetime.today()
         today_date= base_date.date()
