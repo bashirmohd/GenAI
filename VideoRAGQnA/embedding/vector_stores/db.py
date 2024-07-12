@@ -304,7 +304,7 @@ class VideoVS:
         self.update_db(query, top_k)
         #video_results = self.video_retriever.invoke(query)
         video_results = self.video_db.similarity_search_with_score(query=query, k=top_k, filter=self.constraints)
-        for r, score in video_results:
-            print("videos:", r.metadata['video_path'], '\t', r.metadata['date'], '\t', r.metadata['time'], r.metadata['timestamp'], f"score: {score}", r, '\n')
+        #for r, score in video_results:
+        #   print("videos:", r.metadata['video_path'], '\t', r.metadata['date'], '\t', r.metadata['time'], r.metadata['timestamp'], f"score: {score}", r, '\n')
 
         return video_results
