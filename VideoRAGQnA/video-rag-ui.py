@@ -279,8 +279,8 @@ if 'llm' not in st.session_state.keys():
             print("Loading CustomLLM . . .")
             st.session_state['llm'] = CustomLLM()
         elif config['embeddings']['type'] == "video":
-            st.session_state['llm'] = VideoLLM()
             print("Loading VideoLLM . . .")
+            st.session_state['llm'] = VideoLLM()
         else:
             print("ERROR: line 240")
         
@@ -297,11 +297,10 @@ if 'vs' not in st.session_state.keys():
                 st.session_state['vs'] = db.VS(host, port, selected_db)
             elif config['embeddings']['type'] == "video":
                 import json
-                adaclip_cfg_json = json.load(open(config['adaclip_cfg_path'], 'r'))
-                adaclip_cfg_json["resume"] = config['adaclip_model_path']
-                adaclip_cfg = argparse.Namespace(**adaclip_cfg_json)
-                model, _ = setup_adaclip_model(adaclip_cfg, device=device)
-                st.session_state['vs'] = db.VideoVS(host, port, selected_db, model) # FIX THIS LINE
+                meanclip_cfg_json = json.load(open(config['meanclip_cfg_path'], 'r'))
+                meanclip_cfg = argparse.Namespace(**meanclip_cfg_json)
+                model, _ = setup_meanclip_model(meanclip_cfg, device="cpu")
+                st.session_state['vs'] = db.VideoVS(host, port, selected_db, model) 
 
         if st.session_state.vs.client == None:
             print ('Error while connecting to vector DBs')
@@ -320,7 +319,7 @@ def RAG(prompt):
     with st.status("Querying database . . . ", expanded=True) as status:
         st.write('Retrieving 3 image docs') #1 text doc and 
         results = st.session_state.vs.MultiModalRetrieval(prompt, top_k = 3) #n_texts = 1, n_images = 3)
-        status.update(label="Retrived Top matching video!", state="complete", expanded=False)
+        status.update(label="Retrieved Top matching video!", state="complete", expanded=False)
     print("---___---")
     print (f'\tRAG prompt={prompt}')
     print("---___---")
@@ -335,13 +334,6 @@ def RAG(prompt):
     
     return video_name, playback_offset, top_doc
 
-def get_description(vn):
-    content = None
-    des_path = os.path.join(config['description'], vn + '.txt')
-    with open(des_path, 'r') as file:
-        content = file.read()
-    return content
-    
 st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
 if 'prevprompt' not in st.session_state.keys():
