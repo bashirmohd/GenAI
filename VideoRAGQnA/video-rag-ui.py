@@ -12,15 +12,16 @@ from transformers import set_seed
 import argparse
 
 from typing import Any, List, Mapping, Optional
-from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 import threading
 from utils import config_reader as reader
+from utils import prompt_handler as ph
 HUGGINGFACEHUB_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN", "")
 from embedding.extract_vl_embedding import VLEmbeddingExtractor as VL
-from embedding.generate_store_embeddings import setup_meanclip_model 
+from embedding.generate_store_embeddings import setup_adaclip_model 
 from embedding.video_llama.common.config import Config
 from embedding.video_llama.common.dist_utils import get_rank
 from embedding.video_llama.common.registry import registry
@@ -40,30 +41,23 @@ set_seed(22)
 
 instructions = [
     """Identify the person [with specific features / seen at a specific location
-    / performing a specific action] in the provided data. Provide details such as their
-    role, and any other relevant information, 
-    Do not give repetitions, always give distinct and accurate information only.
-    """,
+    / performing a specific action] in the provided data. Provide details such as their name,
+    role, and any other relevant information.""",
     
     """Analyze the provided data to recognize and describe the activities performed by individuals.
-    Specify the type of activity and any relevant contextual details, 
-    Do not give repetitions, always give distinct and accurate information only.""",
+    Specify the type of activity and any relevant contextual details.""",
     
     """Determine the interactions between individuals and items in the provided data.
-    Describe the nature of the interaction and the items involved, 
-    Do not give repetitions, always give distinct and accurate information only.""",
+    Describe the nature of the interaction and the items involved.""",
     
     """Analyze the provided data to answer queries based on specific time intervals.
-    Provide detailed information corresponding to the specified time frames,
-    Do not give repetitions, always give distinct and accurate information only.""",
+    Provide detailed information corresponding to the specified time frames.""",
     
     """Identify individuals based on their appearance as described in the provided data.
-     Provide details about their identity and actions,
-     Do not give repetitions, always give distinct and accurate information only.""",
+     Provide details about their identity and actions.""",
     
     """Answer questions related to events and activities that occurred on a specific day.
-    Provide a detailed account of the events,
-    Do not give repetitions, always give distinct and accurate information only."""
+    Provide a detailed account of the events."""
 ]
 
 # Embeddings
@@ -81,13 +75,13 @@ if 'config' not in st.session_state.keys():
     st.session_state.config = reader.read_config('docs/config.yaml')
 
 config = st.session_state.config
-device = "cpu" #torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 model_path = config['model_path']
 video_dir = config['videos']
 # Read AdaCLIP
-if not os.path.exists(os.path.join(config['meta_output_dir'], "metadata.json")):
-    from embedding.generate_store_embeddings import main
-    vs = main()
+# if not os.path.exists(os.path.join(config['meta_output_dir'], "metadata.json")):
+from embedding.generate_store_embeddings import main
+vs = main()
 st.set_page_config(initial_sidebar_state='collapsed', layout='wide')
 
 st.title("Video RAG")
@@ -108,10 +102,9 @@ st.markdown(title_alignment, unsafe_allow_html=True)
 
 @st.cache_resource       
 def load_models():
-    print("loading in model")
     #print("HF Token: ", HUGGINGFACEHUB_API_TOKEN)
     #model = AutoModelForCausalLM.from_pretrained(
-    #    model_path, torch_dtype=torch.float32, device_map=device, trust_remote_code=True, token=HUGGINGFACEHUB_API_TOKEN
+    #    model_path, torch_dtype=torch.float32, device_map='auto', trust_remote_code=True, token=HUGGINGFACEHUB_API_TOKEN
     #)
 
     #tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, token=HUGGINGFACEHUB_API_TOKEN)
@@ -128,13 +121,10 @@ def load_models():
 video_llama, tokenizer, streamer = load_models()
 vis_processor_cfg = video_llama.cfg.datasets_cfg.webvid.vis_processor.train
 vis_processor = registry.get_processor_class(vis_processor_cfg.name).from_config(vis_processor_cfg)
-print("-"*30)
-print("initializing model")
-chat = Chat(video_llama.model, vis_processor, device=device)
+
+chat = Chat(video_llama.model, vis_processor, device='cpu')
 
 def chat_reset(chat_state, img_list):
-    print("-"*30)
-    print("resetting chatState")
     if chat_state is not None:
         chat_state.messages = []
     if img_list is not None:
@@ -168,7 +158,7 @@ class VideoLLM(LLM):
         chat.upload_video_without_audio(video_path, start_time, duration)
         chat.ask(text_input)#, chat_state)
         #answer = chat.answer(chat_state, img_list, max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True, streamer=streamer)
-        answer = chat.answer(max_new_tokens=150, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.01, max_length=1000, keep_conv_hist=True, streamer=streamer)
+        answer = chat.answer(max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=0.1, max_length=2000, keep_conv_hist=True, streamer=streamer)
 
     def stream_res(self, video_path, text_input, chat, start_time, duration):
         #thread = threading.Thread(target=self._call, args=(video_path, text_input, chat, chat_state, img_list, streamer))  # Pass streamer to _call
@@ -236,8 +226,6 @@ class CustomLLM(LLM):
         return "custom"
     
 def get_top_doc(results, qcnt):
-    print("-"*30)
-    print("retrieving videos model")
     hit_score = {}
     for r in results:
         try:
@@ -258,8 +246,6 @@ def get_top_doc(results, qcnt):
     if qcnt >= len(x):
         return None, None
     print (f'top docs = {x}')
-    print("-"*30)
-    print("video retrieval done")
     return {'video': list(x)[qcnt]}, playback_offset
 
 def play_video(x, offset):
@@ -279,8 +265,8 @@ if 'llm' not in st.session_state.keys():
             print("Loading CustomLLM . . .")
             st.session_state['llm'] = CustomLLM()
         elif config['embeddings']['type'] == "video":
-            print("Loading VideoLLM . . .")
             st.session_state['llm'] = VideoLLM()
+            print("Loading VideoLLM . . .")
         else:
             print("ERROR: line 240")
         
@@ -297,10 +283,11 @@ if 'vs' not in st.session_state.keys():
                 st.session_state['vs'] = db.VS(host, port, selected_db)
             elif config['embeddings']['type'] == "video":
                 import json
-                meanclip_cfg_json = json.load(open(config['meanclip_cfg_path'], 'r'))
-                meanclip_cfg = argparse.Namespace(**meanclip_cfg_json)
-                model, _ = setup_meanclip_model(meanclip_cfg, device="cpu")
-                st.session_state['vs'] = db.VideoVS(host, port, selected_db, model) 
+                adaclip_cfg_json = json.load(open(config['adaclip_cfg_path'], 'r'))
+                adaclip_cfg_json["resume"] = config['adaclip_model_path']
+                adaclip_cfg = argparse.Namespace(**adaclip_cfg_json)
+                model, _ = setup_adaclip_model(adaclip_cfg, device="cpu")
+                st.session_state['vs'] = db.VideoVS(host, port, selected_db, model) # FIX THIS LINE
 
         if st.session_state.vs.client == None:
             print ('Error while connecting to vector DBs')
@@ -319,7 +306,7 @@ def RAG(prompt):
     with st.status("Querying database . . . ", expanded=True) as status:
         st.write('Retrieving 3 image docs') #1 text doc and 
         results = st.session_state.vs.MultiModalRetrieval(prompt, top_k = 3) #n_texts = 1, n_images = 3)
-        status.update(label="Retrieved Top matching video!", state="complete", expanded=False)
+        status.update(label="Retrived Top matching video!", state="complete", expanded=False)
     print("---___---")
     print (f'\tRAG prompt={prompt}')
     print("---___---")
@@ -334,6 +321,13 @@ def RAG(prompt):
     
     return video_name, playback_offset, top_doc
 
+def get_description(vn):
+    content = None
+    des_path = os.path.join(config['description'], vn + '.txt')
+    with open(des_path, 'r') as file:
+        content = file.read()
+    return content
+    
 st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
 if 'prevprompt' not in st.session_state.keys():
@@ -345,8 +339,7 @@ if 'qcnt' not in st.session_state.keys():
     st.session_state['qcnt'] = 0
 
 def handle_message():
-    print("-"*30)
-    print("starting message handling")
+    print("messages"*8, st.session_state.messages) 
     # Generate a new response if last message is not from assistant
     if st.session_state.messages[-1]["role"] != "assistant":
         # Handle user messages here
@@ -382,15 +375,13 @@ def handle_message():
                 for new_text in st.session_state.llm.stream_res(video_name, instruction, chat, playback_offset, config['clip_duration']):
                     full_response += new_text
                     placeholder.markdown(full_response)
-
+                print(full_response)
                 end = time.time()
                 full_response += f'\n\n🚀 Generated in {(end - start):.4f} seconds.'
                 #chat_state, img_list = chat_reset(chat_state, img_list)
                 #chat.clear()
                 placeholder.markdown(full_response)
         message = {"role": "assistant", "content": full_response}
-        print("-"*30)
-        print("message handling done")
         st.session_state.messages.append(message)
       
 def display_messages():
@@ -433,7 +424,7 @@ else:
     prompt = st.session_state.example_video
     st.session_state['prompt'] = prompt
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
-    st.chat_input(disabled=True)
+    st.chat_input(disabled=False)
     if prompt == 'Find similar videos':
         st.session_state.messages.append({"role": "user", "content": prompt+': '+st.session_state['prevprompt']})
     else:

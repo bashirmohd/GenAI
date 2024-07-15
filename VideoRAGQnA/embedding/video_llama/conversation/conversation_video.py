@@ -207,9 +207,8 @@ class Chat:
 
         current_max_len = embs.shape[1] + max_new_tokens
         if current_max_len - max_length > 0:
-                    begin_idx = max(0, current_max_len - max_length)
-            # print('Warning: The number of tokens in current conversation exceeds the max length. '
-            #       'The model will not see the contexts outside the range.')
+            print('Warning: The number of tokens in current conversation exceeds the max length. '
+                  'The model will not see the contexts outside the range.')
         begin_idx = max(0, current_max_len - max_length)
 
         embs = embs[:, begin_idx:]
@@ -248,8 +247,8 @@ class Chat:
             output_text = output_text.split(self.conv.sep2)[0]  # remove the stop sign '###'
             output_text = output_text.split(self.conv.roles[1]+':')[-1].strip()
         self.conv.messages[-1][1] = output_text
-        # print("chat.answer - llama output_text:", output_text)
-        # print("chat.answer - llama output_token.cpu().numpy().shape:", output_token.cpu().numpy().shape)
+        #print("chat.answer - llama output_text:", output_text)
+        #print("chat.answer - llama output_token.cpu().numpy().shape:", output_token.cpu().numpy().shape)
         return output_text, output_token.cpu().numpy()
     
     def upload_video(self, video_path):
@@ -383,14 +382,14 @@ class Chat:
             # only add bos to the first seg
             for i, seg in enumerate(prompt_segs)
         ]
-        # print(f"chat.get_context_emb - len(seg_tokens): {len(seg_tokens)}")
-        # for i in range(len(seg_tokens)):
-        #     print(f"seg_tokens[{i}].size(): {seg_tokens[i].size()}")
+        #print(f"chat.get_context_emb - len(seg_tokens): {len(seg_tokens)}")
+        #for i in range(len(seg_tokens)):
+        #    print(f"seg_tokens[{i}].size(): {seg_tokens[i].size()}")
         seg_embs = [self.model.llama_model.model.embed_tokens(seg_t) for seg_t in seg_tokens]
         #print(f"chat.get_context_emb - seg_embs[:3]: {seg_embs[:3]}")
         mixed_embs = [emb for pair in zip(seg_embs[:-1], self.img_list) for emb in pair] + [seg_embs[-1]]
         mixed_embs = torch.cat(mixed_embs, dim=1)
-        # print(f"chat.get_context_emb - mixed_embs.size(): {mixed_embs.size()}")
+        #print(f"chat.get_context_emb - mixed_embs.size(): {mixed_embs.size()}")
         return mixed_embs
 
     def clear(self):
